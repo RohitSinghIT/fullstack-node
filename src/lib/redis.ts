@@ -11,7 +11,6 @@ const redisConfig = {
   db: parseInt(process.env.REDIS_DB || '0'),
   retryDelayOnFailover: 100,
   maxRetriesPerRequest: 3,
-  lazyConnect: true,
   keepAlive: 30000,
   connectTimeout: 10000,
   commandTimeout: 5000,
@@ -25,7 +24,7 @@ redis.on('connect', () => {
   console.log('✅ Redis connected successfully');
 });
 
-redis.on('error', (error) => {
+redis.on('error', error => {
   console.error('❌ Redis connection error:', error);
 });
 
@@ -104,7 +103,10 @@ export class RedisCache {
   }
 
   // Set multiple keys
-  async mset(keyValuePairs: Record<string, any>, ttlSeconds: number = 3600): Promise<void> {
+  async mset(
+    keyValuePairs: Record<string, any>,
+    ttlSeconds: number = 3600
+  ): Promise<void> {
     try {
       const pipeline = this.redis.pipeline();
       for (const [key, value] of Object.entries(keyValuePairs)) {
@@ -123,7 +125,7 @@ export class RedisCache {
     try {
       const values = await this.redis.mget(...keys);
       const result: Record<string, any> = {};
-      
+
       keys.forEach((key, index) => {
         if (values[index]) {
           try {
@@ -133,7 +135,7 @@ export class RedisCache {
           }
         }
       });
-      
+
       return result;
     } catch (error) {
       console.error('Redis mget error:', error);
@@ -180,4 +182,4 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('SIGINT received, closing Redis connection');
   await redis.quit();
-}); 
+});

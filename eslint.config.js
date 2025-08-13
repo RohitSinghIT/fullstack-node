@@ -17,6 +17,11 @@ export default [
       globals: {
         process: 'readonly',
         globalThis: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
       },
     },
     plugins: {
@@ -30,7 +35,7 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      'no-console': 'warn',
+      'no-console': 'off',
     },
   },
   {

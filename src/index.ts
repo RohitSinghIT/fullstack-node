@@ -46,15 +46,20 @@ app.use('/', routes);
 
 // Security middleware
 app.use(helmet());
-app.use(compression() as unknown as RequestHandler);  
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://bringfresh.in'] 
-    : ['http://localhost:3000', 
-      'http://localhost:3001',
-      'http://localhost:5173'],
-  credentials: true,
-}));
+app.use(compression() as unknown as RequestHandler);
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? ['https://bringfresh.in']
+        : [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:5173',
+          ],
+    credentials: true,
+  })
+);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -67,9 +72,17 @@ app.use(authMiddleware);
 app.get('/health', async (req, res) => {
   try {
     // Check Redis connection
-    const redisStatus = redis.status;
-    const redisConnected = redisStatus === 'ready';
-    
+    let redisConnected = false;
+    let redisStatus = 'unknown';
+    try {
+      await redis.ping();
+      redisConnected = true;
+      redisStatus = 'ready';
+    } catch (error) {
+      console.error('Redis connection error:', error);
+      redisStatus = 'error';
+    }
+
     // Check database connection
     let dbConnected = false;
     try {
@@ -78,28 +91,28 @@ app.get('/health', async (req, res) => {
     } catch (error) {
       console.error('Database connection error:', error);
     }
-    
-    res.json({ 
-      status: 'OK', 
+
+    res.json({
+      status: 'OK',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       port: process.env.PORT || 4000,
       services: {
         database: dbConnected ? 'connected' : 'disconnected',
         redis: redisConnected ? 'connected' : 'disconnected',
-        redisStatus
+        redisStatus,
       },
       endpoints: {
         panel: `http://localhost:${process.env.PORT || 4000}/graphql`,
         mobile: `http://localhost:${process.env.PORT || 4000}/graphql/mobile/v1`,
-        health: `http://localhost:${process.env.PORT || 4000}/health`
-      }
+        health: `http://localhost:${process.env.PORT || 4000}/health`,
+      },
     });
   } catch (error) {
     res.status(500).json({
       status: 'ERROR',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -109,7 +122,7 @@ async function startServer() {
   const panelServer = new ApolloServer<Context>({
     typeDefs,
     resolvers,
-    formatError: (error) => {
+    formatError: error => {
       console.error('Panel GraphQL Error:', error);
       return {
         message: error.message,
@@ -121,7 +134,7 @@ async function startServer() {
         requestDidStart: async () => ({
           willSendResponse: async ({ response }) => {
             if (response.body.kind === 'single') {
-              const { data, errors } = response.body.singleResult;
+              const { errors } = response.body.singleResult;
               if (errors) {
                 console.error('Panel GraphQL Errors:', errors);
               }
@@ -136,7 +149,7 @@ async function startServer() {
   const mobileV1Server = new ApolloServer<Context>({
     typeDefs: mobileV1Schema,
     resolvers: mobileV1Resolvers,
-    formatError: (error) => {
+    formatError: error => {
       console.error('Mobile V1 GraphQL Error:', error);
       return {
         message: error.message,
@@ -148,7 +161,7 @@ async function startServer() {
         requestDidStart: async () => ({
           willSendResponse: async ({ response }) => {
             if (response.body.kind === 'single') {
-              const { data, errors } = response.body.singleResult;
+              const { errors } = response.body.singleResult;
               if (errors) {
                 console.error('Mobile V1 GraphQL Errors:', errors);
               }
@@ -202,7 +215,9 @@ async function startServer() {
   app.listen(PORT, () => {
     console.log(`🚀 Server ready at http://localhost:${PORT}`);
     console.log(`📊 Panel GraphQL: http://localhost:${PORT}/graphql`);
-    console.log(`📱 Mobile V1 GraphQL: http://localhost:${PORT}/graphql/mobile/v1`);
+    console.log(
+      `📱 Mobile V1 GraphQL: http://localhost:${PORT}/graphql/mobile/v1`
+    );
     console.log(`🏥 Health check: http://localhost:${PORT}/health`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
   });
@@ -227,12 +242,12 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
   process.exit(1);
 });
 
-startServer().catch((error) => {
+startServer().catch(error => {
   console.error('Failed to start server:', error);
   process.exit(1);
-}); 
+});
