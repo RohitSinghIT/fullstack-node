@@ -1,0 +1,284 @@
+# Mobile V1 GraphQL Schema - Optimized for Mobile Apps
+
+type Query {
+  # Mobile-optimized queries
+  me: User!
+  
+  # Product queries (mobile-optimized)
+  products(
+    page: Int = 1
+    limit: Int = 20
+    category: String
+    search: String
+    vendorId: String
+  ): ProductConnection!
+  
+  product(id: ID!): Product
+  
+  categories: [Category!]!
+  
+  # Vendor queries (mobile-optimized)
+  vendors(
+    page: Int = 1
+    limit: Int = 20
+    search: String
+  ): VendorConnection!
+  
+  vendor(id: ID!): Vendor
+  
+  # Order queries (mobile-optimized)
+  myOrders(
+    page: Int = 1
+    limit: Int = 20
+    status: OrderStatus
+  ): OrderConnection!
+  
+  order(id: ID!): Order
+}
+
+type Mutation {
+  # Auth mutations (mobile-optimized)
+  login(input: LoginInput!): AuthResponse!
+  register(input: RegisterInput!): AuthResponse!
+  sendOtp(phoneNumber: String!): OtpResponse!
+  verifyOtp(phoneNumber: String!, otp: String!): AuthResponse!
+  updateProfile(input: UpdateProfileInput!): User!
+  changePassword(input: ChangePasswordInput!): Boolean!
+  
+  # Order mutations (mobile-optimized)
+  createOrder(input: CreateOrderInput!): Order!
+  cancelOrder(id: ID!): Order!
+  
+  # Review mutations (mobile-optimized)
+  createReview(input: CreateReviewInput!): Review!
+  updateReview(id: ID!, input: UpdateReviewInput!): Review!
+}
+
+# Mobile-optimized types
+type User {
+  id: ID!
+  email: String!
+  name: String
+  phone: String
+  role: UserRole!
+  createdAt: String!
+  
+  # Mobile-specific fields
+  totalOrders: Int!
+  totalSpent: Float!
+  favoriteVendors: [Vendor!]!
+}
+
+type Product {
+  id: ID!
+  name: String!
+  description: String
+  category: String!
+  brand: String
+  images: [String!]!
+  isActive: Boolean!
+  
+  # Mobile-optimized fields
+  variants: [ProductVariant!]!
+  vendorPrices: [VendorPrice!]!
+  averageRating: Float
+  reviewCount: Int
+}
+
+type ProductVariant {
+  id: ID!
+  name: String!
+  value: String!
+  sku: String!
+  stock: Int!
+  isActive: Boolean!
+}
+
+type VendorPrice {
+  id: ID!
+  price: Float!
+  comparePrice: Float
+  isActive: Boolean!
+  
+  vendor: Vendor!
+  variant: ProductVariant
+}
+
+type Vendor {
+  id: ID!
+  name: String!
+  description: String
+  logo: String
+  isActive: Boolean!
+  
+  # Mobile-optimized fields
+  rating: Float
+  reviewCount: Int
+  deliveryFee: Float
+  minimumOrderAmount: Float
+  deliveryRadius: Float
+  
+  products: [VendorProduct!]!
+}
+
+type VendorProduct {
+  id: ID!
+  isActive: Boolean!
+  
+  product: Product!
+  prices: [VendorPrice!]!
+}
+
+type Category {
+  name: String!
+  count: Int!
+}
+
+type Order {
+  id: ID!
+  status: OrderStatus!
+  totalAmount: Float!
+  createdAt: String!
+  
+  # Mobile-optimized fields
+  vendor: Vendor!
+  orderItems: [OrderItem!]!
+  estimatedDelivery: String
+  trackingNumber: String
+}
+
+type OrderItem {
+  id: ID!
+  quantity: Int!
+  price: Float!
+  
+  product: Product!
+  variant: ProductVariant
+}
+
+type Review {
+  id: ID!
+  rating: Int!
+  comment: String
+  createdAt: String!
+  
+  user: User!
+  product: Product
+  vendor: Vendor
+}
+
+# Connection types for pagination
+type ProductConnection {
+  edges: [ProductEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ProductEdge {
+  node: Product!
+  cursor: String!
+}
+
+type VendorConnection {
+  edges: [VendorEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type VendorEdge {
+  node: Vendor!
+  cursor: String!
+}
+
+type OrderConnection {
+  edges: [OrderEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type OrderEdge {
+  node: Order!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+# Input types
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input RegisterInput {
+  email: String!
+  password: String!
+  name: String!
+  phone: String
+}
+
+input UpdateProfileInput {
+  name: String
+  phone: String
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+}
+
+input CreateOrderInput {
+  vendorId: String!
+  items: [OrderItemInput!]!
+  notes: String
+  deliveryInstructions: String
+}
+
+input OrderItemInput {
+  productId: String!
+  variantId: String
+  quantity: Int!
+  price: Float!
+}
+
+input CreateReviewInput {
+  productId: String
+  vendorId: String
+  rating: Int!
+  comment: String
+}
+
+input UpdateReviewInput {
+  rating: Int
+  comment: String
+}
+
+# Response types
+type AuthResponse {
+  user: User!
+  token: String!
+  expiresAt: String!
+}
+
+type OtpResponse {
+  success: Boolean!
+  message: String!
+}
+
+# Enums
+enum UserRole {
+  CUSTOMER
+  DELIVERY_PARTNER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+} 

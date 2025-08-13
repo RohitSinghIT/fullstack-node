@@ -1,0 +1,1543 @@
+# GraphQL Schema for BringFresh Application
+
+scalar DateTime
+scalar Decimal
+scalar Json
+scalar UUID
+
+type Query {
+  # User queries
+  me: User
+  users: [User!]!
+  user(id: ID!): User
+  
+  # Customer queries
+  customers: [Customer!]!
+  customer(id: ID!): Customer
+  customerByEmail(email: String!): Customer
+  customerByMobile(mobile: String!): Customer
+  
+  # Product queries
+  products: [Product!]!
+  product(id: ID!): Product
+  productsByCategory(categoryId: ID!): [Product!]!
+  featuredProducts: [Product!]!
+  searchProducts(query: String!): [Product!]!
+  
+  # Category queries
+  categories: [ProductCategory!]!
+  category(id: ID!): ProductCategory
+  featuredCategories: [ProductCategory!]!
+  
+  # Vendor queries
+  vendors: [VendorDetail!]!
+  vendor(id: ID!): VendorDetail
+  vendorByUserId(userId: ID!): VendorDetail
+  
+  # Order queries
+  orders: [Order!]!
+  order(id: ID!): Order
+  ordersByCustomer(customerId: ID!): [Order!]!
+  ordersByVendor(vendorId: ID!): [Order!]!
+  
+  # Wishlist queries
+  wishlistByCustomer(customerId: ID!): [Wishlist!]!
+  
+  # Wallet queries
+  walletByCustomer(customerId: ID!): [Wallet!]!
+  
+  # Review queries
+  reviewsByProduct(productId: ID!): [ReviewRating!]!
+  reviewsByCustomer(customerId: ID!): [ReviewRating!]!
+  
+  # Delivery queries
+  deliveryBoys: [DeliveryBoy!]!
+  deliveryBoy(id: ID!): DeliveryBoy
+  deliveryAreas: [DeliveryArea!]!
+  
+  # Notification queries
+  notifications: [Notification!]!
+  notification(id: ID!): Notification
+  
+  # Config queries
+  configs: [Config!]!
+  config(key: String!): Config
+}
+
+type Mutation {
+  # Auth mutations
+  signup(input: SignupInput!): AuthResponse!
+  login(input: LoginInput!): AuthResponse!
+  logout: Boolean!
+  changePassword(input: ChangePasswordInput!): Boolean!
+  forgotPassword(email: String!): Boolean!
+  resetPassword(input: ResetPasswordInput!): Boolean!
+  acceptPrivacyPolicy: Boolean!
+  
+  # User mutations
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+  deleteUser(id: ID!): Boolean!
+  toggleTwoFactor: Boolean!
+  updateDataConsent: Boolean!
+  
+  # Customer mutations
+  createCustomer(input: CreateCustomerInput!): Customer!
+  updateCustomer(id: ID!, input: UpdateCustomerInput!): Customer!
+  deleteCustomer(id: ID!): Boolean!
+  
+  # Product mutations
+  createProduct(input: CreateProductInput!): Product!
+  updateProduct(id: ID!, input: UpdateProductInput!): Product!
+  deleteProduct(id: ID!): Boolean!
+  addProductToCategory(productId: ID!, categoryId: ID!): Product!
+  removeProductFromCategory(productId: ID!, categoryId: ID!): Product!
+  
+  # Category mutations
+  createCategory(input: CreateCategoryInput!): ProductCategory!
+  updateCategory(id: ID!, input: UpdateCategoryInput!): ProductCategory!
+  deleteCategory(id: ID!): Boolean!
+  
+  # Vendor mutations
+  createVendor(input: CreateVendorInput!): VendorDetail!
+  updateVendor(id: ID!, input: UpdateVendorInput!): VendorDetail!
+  deleteVendor(id: ID!): Boolean!
+  
+  # Order mutations
+  createOrder(input: CreateOrderInput!): Order!
+  updateOrder(id: ID!, input: UpdateOrderInput!): Order!
+  cancelOrder(id: ID!): Order!
+  
+  # Wishlist mutations
+  addToWishlist(input: AddToWishlistInput!): Wishlist!
+  removeFromWishlist(id: ID!): Boolean!
+  
+  # Wallet mutations
+  addWalletTransaction(input: AddWalletTransactionInput!): Wallet!
+  
+  # Review mutations
+  createReview(input: CreateReviewInput!): ReviewRating!
+  updateReview(id: ID!, input: UpdateReviewInput!): ReviewRating!
+  deleteReview(id: ID!): Boolean!
+  
+  # Notification mutations
+  createNotification(input: CreateNotificationInput!): Notification!
+  sendNotification(id: ID!): Boolean!
+  sendNotificationToUsers(input: SendNotificationToUsersInput!): Boolean!
+  sendNotificationToAll(input: SendNotificationToAllInput!): Boolean!
+  updateNotification(id: ID!, input: UpdateNotificationInput!): Notification!
+  deleteNotification(id: ID!): Boolean!
+  
+  # Config mutations
+  createConfig(input: CreateConfigInput!): Config!
+  updateConfig(key: String!, input: UpdateConfigInput!): Config!
+  deleteConfig(key: String!): Boolean!
+  bulkUpdateConfigs(input: [UpdateConfigInput!]!): [Config!]!
+  getOrCreateConfig(key: String!, input: CreateConfigInput!): Config!
+  
+  # Delivery mutations
+  createDeliveryBoy(input: CreateDeliveryBoyInput!): DeliveryBoy!
+  updateDeliveryBoy(id: ID!, input: UpdateDeliveryBoyInput!): DeliveryBoy!
+  createDeliveryArea(input: CreateDeliveryAreaInput!): DeliveryArea!
+  updateDeliveryArea(id: ID!, input: UpdateDeliveryAreaInput!): DeliveryArea!
+  assignDeliveryBoy(input: AssignDeliveryBoyInput!): DeliveryAssignment!
+}
+
+# Types
+type User {
+  id: ID!
+  tenantId: UUID!
+  uuid: UUID!
+  name: String!
+  email: String!
+  mobile: String
+  status: UserStatus!
+  profilePicture: String
+  dob: DateTime
+  fatherName: String
+  twoFactorEnabled: Boolean!
+  lastPasswordChange: DateTime
+  failedLoginAttempts: Int!
+  accountLockedUntil: DateTime
+  dataConsent: Boolean!
+  consentDate: DateTime
+  dataRetentionPolicy: String
+  lastDataAccess: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+  createdUsers: [User!]!
+  userRoles: [UserRole!]!
+  userPermissions: [UserPermission!]!
+  vendorDetails: VendorDetail
+  deliveryBoy: DeliveryBoy
+  addresses: [Address!]!
+  auditLogs: [AuditLog!]!
+  createdCategories: [ProductCategory!]!
+  createdProducts: [Product!]!
+  createdNotifications: [Notification!]!
+  createdImageSliders: [ImageSlider!]!
+  createdFeatures: [Feature!]!
+  createdWithdrawalRequests: [WithdrawalRequest!]!
+  createdSocialIcons: [SocialIcon!]!
+  createdFAQs: [FAQ!]!
+  createdPromoCodes: [PromoCode!]!
+  createdInvoices: [Invoice!]!
+  createdDeliveryAreas: [DeliveryArea!]!
+  createdDeliveryBoyEarnings: [DeliveryBoyEarning!]!
+  createdDeliveryBoyPayouts: [DeliveryBoyPayout!]!
+  createdDeliveryBoyCashCollections: [DeliveryBoyCashCollection!]!
+  createdVendorTransactions: [VendorTransaction!]!
+  createdReturns: [Return!]!
+  createdFeedbacks: [Feedback!]!
+  createdReviewRatings: [ReviewRating!]!
+  createdLogs: [Log!]!
+  createdWomenEmpowerment: [WomenEmpowerment!]!
+  createdDevices: [Device!]!
+  approvedVendorTransactions: [VendorTransaction!]!
+  paidDeliveryBoyEarnings: [DeliveryBoyEarning!]!
+  createdProductVariants: [ProductVariant!]!
+  createdUnits: [Unit!]!
+  createdOffers: [Offer!]!
+  publishedOffers: [Offer!]!
+  createdSchemes: [Scheme!]!
+  publishedSchemes: [Scheme!]!
+  lastUpdatedSchemes: [Scheme!]!
+  createdDeliveryAssignments: [DeliveryAssignment!]!
+}
+
+type Customer {
+  id: ID!
+  uuid: UUID!
+  firstName: String!
+  lastName: String!
+  email: String
+  mobile: String!
+  alternateMobile: String
+  balance: Decimal!
+  referralCode: String
+  referredBy: Customer
+  totalRefer: Int!
+  profilePicture: String
+  dob: DateTime
+  status: CustomerStatus!
+  verified: Boolean!
+  lastOrderDate: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  referredCustomers: [Customer!]!
+  addresses: [Address!]!
+  wallets: [Wallet!]!
+  wishlists: [Wishlist!]!
+  orders: [Order!]!
+  returns: [Return!]!
+  feedbacks: [Feedback!]!
+  reviewRatings: [ReviewRating!]!
+  devices: [Device!]!
+  womenEmpowerment: [WomenEmpowerment!]!
+  invoices: [Invoice!]!
+}
+
+type Product {
+  id: ID!
+  tenantId: UUID!
+  cacheVersion: Int!
+  lastCacheUpdate: DateTime
+  uuid: UUID!
+  name: String!
+  productHindiName: String
+  type: ProductType!
+  upc: String
+  tax: Decimal!
+  cess: Decimal!
+  cgst: Decimal!
+  sgst: Decimal!
+  availability: String!
+  rating: Decimal!
+  sku: String!
+  hsnCode: String
+  brand: String
+  coverImage: String
+  status: ProductStatus!
+  featured: Boolean!
+  offerId: Int
+  searchTags: String
+  seoUrl: String
+  orderIndex: Int!
+  relatedProducts: String
+  cancellation: CancellationPolicy!
+  return: ReturnPolicy!
+  returnDays: Int
+  isCodAllowed: Boolean!
+  isDeleted: Boolean!
+  metaTitle: String
+  metaDescription: String
+  metaKeywords: [String!]!
+  socialMediaTags: Json
+  productVideoUrl: String
+  view360Images: Json
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+  categoryLinks: [ProductCategoryLink!]!
+  variants: [ProductVariant!]!
+  vendorProducts: [VendorProduct!]!
+  orderDetails: [OrderDetail!]!
+  returns: [Return!]!
+  reviewRatings: [ReviewRating!]!
+  features: [Feature!]!
+}
+
+type ProductCategory {
+  id: ID!
+  name: String!
+  subName: String
+  hindiName: String
+  image: String
+  featured: Boolean!
+  status: String!
+  orderIndex: Int!
+  isDeleted: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+  categoryLinks: [ProductCategoryLink!]!
+  variants: [ProductVariant!]!
+}
+
+type VendorDetail {
+  id: ID!
+  userId: ID!
+  storeName: String!
+  storeAddress: String!
+  storeImage: String!
+  storeUrl: String!
+  gstNumber: String
+  fssai: String
+  cia: String
+  panNumber: String
+  bankAccountNumber: String
+  bankIfsc: String
+  bankBranch: String
+  bankName: String
+  commissionType: String
+  commissionRate: Decimal
+  status: VendorStatus!
+  prApproval: Boolean
+  verificationDocuments: Json
+  totalProducts: Int!
+  totalOrders: Int!
+  totalEarnings: Decimal!
+  rating: Decimal!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  user: User!
+  wishlists: [Wishlist!]!
+  vendorProducts: [VendorProduct!]!
+  orders: [Order!]!
+  vendorTransactions: [VendorTransaction!]!
+  deliveryBoyCashCollections: [DeliveryBoyCashCollection!]!
+  invoices: [Invoice!]!
+}
+
+type Order {
+  id: ID!
+  tenantId: UUID!
+  partitionKey: String
+  uuid: UUID!
+  orderId: ID!
+  orderDate: DateTime!
+  vendorId: ID!
+  customerId: ID!
+  deliveryBoyId: ID!
+  addressId: Int
+  shippingCharges: Decimal!
+  tax: Decimal!
+  promoCodeId: Int
+  discount: Decimal!
+  amount: Decimal!
+  updatedAmount: Decimal!
+  deductFromWallet: Decimal!
+  paymentId: String
+  paymentStatus: String!
+  paymentMethod: String!
+  cancellationReason: String
+  partialCancelReason: String
+  rating: Decimal
+  review: String
+  tip: Decimal!
+  deliveredAt: DateTime
+  shippedAt: DateTime
+  freebieOfferId: Int
+  womenEmpowerment: String
+  customerReward: String
+  incentiveSettlement: Boolean!
+  revertToWallet: Decimal!
+  estimatedDeliveryTime: DateTime
+  actualDeliveryTime: DateTime
+  deliverySlotStart: DateTime
+  deliverySlotEnd: DateTime
+  customerNotes: String
+  vendorNotes: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  customer: Customer!
+  vendor: VendorDetail!
+  orderDetails: [OrderDetail!]!
+  returns: [Return!]!
+  deliveryAssignments: [DeliveryAssignment!]!
+  deliveryBoyEarnings: [DeliveryBoyEarning!]!
+  deliveryBoyPayouts: [DeliveryBoyPayout!]!
+  deliveryBoyCashCollections: [DeliveryBoyCashCollection!]!
+  invoices: [Invoice!]!
+  reviewRatings: [ReviewRating!]!
+}
+
+type Wishlist {
+  id: ID!
+  uuid: UUID!
+  customerId: ID!
+  vendorId: ID
+  vendorProductId: ID!
+  quantity: Int
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  customer: Customer!
+  vendor: VendorDetail
+  vendorProduct: VendorProduct!
+  variants: [ProductVariant!]!
+}
+
+type Wallet {
+  id: ID!
+  customerId: ID!
+  transactionType: TransactionType!
+  amount: Decimal!
+  totalAmount: Decimal!
+  redeemType: String
+  title: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  customer: Customer!
+}
+
+type ReviewRating {
+  id: ID!
+  customerId: ID!
+  productId: ID!
+  orderId: ID
+  rating: Decimal!
+  review: String
+  status: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  customer: Customer!
+  product: Product!
+  order: Order
+  createdReviewRatings: [User!]!
+}
+
+# Enums
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum ProductType {
+  PACKED
+  LOOSE
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+}
+
+enum CancellationPolicy {
+  ALLOWED
+  NOT_ALLOWED
+}
+
+enum ReturnPolicy {
+  ALLOWED
+  NOT_ALLOWED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+# Input types
+input SignupInput {
+  name: String!
+  email: String!
+  password: String!
+  mobile: String
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+}
+
+input ResetPasswordInput {
+  token: String!
+  newPassword: String!
+}
+
+input CreateUserInput {
+  name: String!
+  email: String!
+  password: String!
+  mobile: String
+  status: UserStatus
+}
+
+input UpdateUserInput {
+  name: String
+  email: String
+  mobile: String
+  status: UserStatus
+  profilePicture: String
+}
+
+input CreateCustomerInput {
+  firstName: String!
+  lastName: String!
+  email: String
+  mobile: String!
+  alternateMobile: String
+}
+
+input UpdateCustomerInput {
+  firstName: String
+  lastName: String
+  email: String
+  mobile: String
+  alternateMobile: String
+  status: CustomerStatus
+}
+
+input CreateProductInput {
+  name: String!
+  productHindiName: String
+  type: ProductType!
+  upc: String
+  tax: Decimal
+  cess: Decimal
+  cgst: Decimal
+  sgst: Decimal
+  availability: String
+  sku: String!
+  hsnCode: String
+  brand: String
+  coverImage: String
+  status: ProductStatus
+  featured: Boolean
+  searchTags: String
+  seoUrl: String
+  cancellation: CancellationPolicy
+  return: ReturnPolicy
+  returnDays: Int
+  isCodAllowed: Boolean
+}
+
+input UpdateProductInput {
+  name: String
+  productHindiName: String
+  type: ProductType
+  upc: String
+  tax: Decimal
+  cess: Decimal
+  cgst: Decimal
+  sgst: Decimal
+  availability: String
+  sku: String
+  hsnCode: String
+  brand: String
+  coverImage: String
+  status: ProductStatus
+  featured: Boolean
+  searchTags: String
+  seoUrl: String
+  cancellation: CancellationPolicy
+  return: ReturnPolicy
+  returnDays: Int
+  isCodAllowed: Boolean
+}
+
+input CreateCategoryInput {
+  name: String!
+  subName: String
+  hindiName: String
+  image: String
+  featured: Boolean
+  status: String
+  orderIndex: Int
+}
+
+input UpdateCategoryInput {
+  name: String
+  subName: String
+  hindiName: String
+  image: String
+  featured: Boolean
+  status: String
+  orderIndex: Int
+}
+
+input CreateVendorInput {
+  userId: ID!
+  storeName: String!
+  storeAddress: String!
+  storeImage: String!
+  storeUrl: String!
+  gstNumber: String
+  fssai: String
+  cia: String
+  panNumber: String
+  bankAccountNumber: String
+  bankIfsc: String
+  bankBranch: String
+  bankName: String
+  commissionType: String
+  commissionRate: Decimal
+  status: VendorStatus
+}
+
+input UpdateVendorInput {
+  storeName: String
+  storeAddress: String
+  storeImage: String
+  storeUrl: String
+  gstNumber: String
+  fssai: String
+  cia: String
+  panNumber: String
+  bankAccountNumber: String
+  bankIfsc: String
+  bankBranch: String
+  bankName: String
+  commissionType: String
+  commissionRate: Decimal
+  status: VendorStatus
+}
+
+input CreateOrderInput {
+  customerId: ID!
+  vendorId: ID!
+  deliveryBoyId: ID!
+  addressId: Int
+  shippingCharges: Decimal
+  tax: Decimal
+  promoCodeId: Int
+  discount: Decimal
+  amount: Decimal!
+  paymentMethod: String!
+  customerNotes: String
+  vendorNotes: String
+  orderDetails: [OrderDetailInput!]!
+}
+
+input UpdateOrderInput {
+  deliveryBoyId: ID
+  addressId: Int
+  shippingCharges: Decimal
+  tax: Decimal
+  promoCodeId: Int
+  discount: Decimal
+  amount: Decimal
+  paymentMethod: String
+  cancellationReason: String
+  partialCancelReason: String
+  rating: Decimal
+  review: String
+  tip: Decimal
+  deliveredAt: DateTime
+  shippedAt: DateTime
+  customerNotes: String
+  vendorNotes: String
+  estimatedDeliveryTime: DateTime
+  actualDeliveryTime: DateTime
+  deliverySlotStart: DateTime
+  deliverySlotEnd: DateTime
+}
+
+input OrderDetailInput {
+  vendorProductId: ID!
+  productId: ID
+  variantId: ID
+  quantity: Int!
+  rate: Decimal!
+  marketRate: Decimal
+}
+
+input AddToWishlistInput {
+  customerId: ID!
+  vendorProductId: ID!
+  quantity: Int
+}
+
+input AddWalletTransactionInput {
+  customerId: ID!
+  transactionType: TransactionType!
+  amount: Decimal!
+  title: String!
+  redeemType: String
+}
+
+input CreateReviewInput {
+  customerId: ID!
+  productId: ID!
+  orderId: ID
+  rating: Decimal!
+  review: String
+}
+
+input UpdateReviewInput {
+  rating: Decimal
+  review: String
+  status: String
+}
+
+input CreateNotificationInput {
+  type: String
+  title: String!
+  body: String!
+  image: String
+  role: String
+}
+
+input UpdateNotificationInput {
+  type: String
+  title: String
+  body: String
+  image: String
+  role: String
+  isSend: Boolean
+}
+
+input SendNotificationToUsersInput {
+  userIds: [ID!]!
+  title: String!
+  body: String!
+  image: String
+  role: String
+}
+
+input SendNotificationToAllInput {
+  title: String!
+  body: String!
+  image: String
+  role: String
+}
+
+input CreateConfigInput {
+  keyName: String!
+  value: String
+  description: String
+}
+
+input UpdateConfigInput {
+  value: String
+  description: String
+}
+
+# Response types
+type AuthResponse {
+  user: User!
+  token: String!
+}
+
+# Additional types for completeness
+type UserRole {
+  id: ID!
+  userId: ID!
+  roleId: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  user: User!
+  role: Role!
+}
+
+type Role {
+  id: ID!
+  name: String!
+  freeze: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  userRoles: [UserRole!]!
+  rolePermissions: [RolePermission!]!
+}
+
+type Permission {
+  id: ID!
+  name: String!
+  description: String
+  module: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  rolePermissions: [RolePermission!]!
+  userPermissions: [UserPermission!]!
+}
+
+type RolePermission {
+  id: ID!
+  roleId: ID!
+  permissionId: ID!
+  actions: Json!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  role: Role!
+  permission: Permission!
+}
+
+type UserPermission {
+  id: ID!
+  userId: ID!
+  permissionId: ID!
+  actions: Json!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  user: User!
+  permission: Permission!
+}
+
+type Address {
+  id: ID!
+  uuid: UUID!
+  referenceId: ID!
+  type: AddressType!
+  customerId: ID
+  address: String!
+  title: AddressTitle!
+  latLong: Json
+  landmark: String
+  pincode: String!
+  city: String!
+  state: String!
+  isDefault: Boolean!
+  totalDelivery: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  customer: Customer
+  user: User
+}
+
+enum AddressType {
+  CUSTOMER
+  ADMIN
+  VENDOR
+  DELIVERY_PARTNER
+}
+
+enum AddressTitle {
+  HOME
+  OFFICE
+  OTHER
+}
+
+type ProductVariant {
+  id: ID!
+  vendorProductId: ID!
+  productId: ID
+  categoryId: ID!
+  varient: String
+  sku: String!
+  unitValue: Decimal!
+  rate: Decimal!
+  marketRate: Decimal
+  seoUrl: String
+  status: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  vendorProduct: VendorProduct!
+  category: ProductCategory!
+  createdBy: User
+  orderDetails: [OrderDetail!]!
+  wishlists: [Wishlist!]!
+  product: Product
+}
+
+type VendorProduct {
+  id: ID!
+  uuid: UUID!
+  vendorId: ID!
+  productId: ID!
+  variantId: ID
+  stockQuantity: Int
+  stockSold: Int
+  marketPrice: Decimal!
+  vendorPrice: Decimal!
+  commissionAmount: Decimal!
+  isActive: Boolean!
+  isFeatured: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  vendor: VendorDetail!
+  product: Product!
+  variants: [ProductVariant!]!
+  wishlists: [Wishlist!]!
+  orderDetails: [OrderDetail!]!
+}
+
+type OrderDetail {
+  id: ID!
+  orderId: ID!
+  vendorProductId: ID!
+  productId: ID
+  variantId: ID
+  variantName: String
+  productName: String!
+  productHindiName: String
+  sku: String
+  rate: Decimal!
+  marketRate: Decimal
+  oldRate: Decimal
+  qty: Int!
+  qtyUnit: String
+  unitValue: Decimal
+  updatedQty: Decimal
+  updatedUnitValue: Decimal
+  updatedQtyUnit: String
+  updatedRate: Decimal
+  canceledByBf: Boolean!
+  returnByCustomer: Boolean!
+  status: String
+  reason: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  order: Order!
+  vendorProduct: VendorProduct!
+  variant: ProductVariant
+  product: Product
+}
+
+type ProductCategoryLink {
+  id: ID!
+  productId: ID!
+  categoryId: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  product: Product!
+  category: ProductCategory!
+}
+
+type Return {
+  id: ID!
+  customerId: ID!
+  orderId: ID!
+  productId: ID
+  orderDetailId: ID!
+  productName: String
+  productHindiName: String
+  qtyReturned: Int!
+  reason: String!
+  returnCharges: Decimal!
+  collectedById: ID
+  approveStatus: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  customer: Customer!
+  order: Order!
+  collectedBy: User
+  product: Product
+}
+
+type Feedback {
+  id: ID!
+  customerId: ID
+  feedback: String
+  isDeleted: Boolean
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  customer: Customer
+  createdFeedbacks: [User!]!
+}
+
+type ImageSlider {
+  id: ID!
+  title: String
+  bannerImage: String
+  bannerType: String
+  startTime: DateTime
+  endTime: DateTime
+  minAmount: Float
+  freebie: Json
+  createdById: ID
+  createdByName: String
+  autoPublished: Boolean
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+}
+
+type Feature {
+  id: ID!
+  title: String
+  description: String
+  productType: String
+  productId: Int
+  categoriesIds: [String!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+  products: [Product!]!
+}
+
+type Notification {
+  id: ID!
+  type: String
+  title: String!
+  body: String!
+  image: String
+  createdById: ID
+  role: String
+  isSend: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+}
+
+type WithdrawalRequest {
+  id: ID!
+  userId: ID
+  role: String
+  name: String
+  amount: Float
+  balance: Float
+  message: String
+  status: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+}
+
+type SocialIcon {
+  id: ID!
+  image: String
+  url: String
+  createdById: ID
+  status: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+}
+
+type WomenEmpowerment {
+  id: ID!
+  type: String
+  amount: Float
+  balance: Float
+  description: String
+  contributedByCustomer: Boolean
+  customerId: ID
+  createdById: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  customer: Customer
+  createdBy: User
+}
+
+type FAQ {
+  id: ID!
+  question: String
+  answer: String
+  status: String
+  createdById: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+}
+
+type Device {
+  id: ID!
+  type: String
+  customerId: ID
+  value: String
+  createdById: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  customer: Customer
+  createdBy: User
+}
+
+type PromoCode {
+  id: ID!
+  code: String
+  message: String
+  startTime: DateTime
+  endTime: DateTime
+  noOfUsers: String
+  pincode: String
+  minOrderAmount: Decimal
+  maxDiscountAmount: Decimal
+  discount: String
+  discountType: String
+  repeatUsage: Int
+  noOfRepeatUsage: Int
+  status: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+}
+
+type Invoice {
+  id: ID!
+  invoiceNumber: String
+  orderId: ID
+  vendorId: ID
+  customerId: ID
+  createdById: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  vendor: VendorDetail
+  customer: Customer
+  createdBy: User
+  orders: [Order!]!
+}
+
+type AuditLog {
+  id: ID!
+  uuid: UUID!
+  tableName: String!
+  recordId: UUID!
+  action: AuditAction!
+  oldValues: Json
+  newValues: Json
+  changedFields: [String!]!
+  userId: ID
+  ipAddress: String
+  userAgent: String
+  createdAt: DateTime!
+  
+  # Relations
+  user: User
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+}
+
+type VendorTransaction {
+  id: ID!
+  vendorId: ID!
+  payoutPeriodStart: DateTime!
+  payoutPeriodEnd: DateTime!
+  totalOrders: Int!
+  totalAmount: Decimal!
+  commissionAmount: Decimal!
+  netAmount: Decimal!
+  status: String!
+  type: String
+  paymentMethod: String
+  message: String
+  transactionId: String
+  paidAt: DateTime
+  approvedBy: ID
+  approvalDate: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  vendor: VendorDetail!
+  approvedByUser: User
+  createdVendorTransactions: [User!]!
+}
+
+type DeliveryBoy {
+  id: ID!
+  userId: ID!
+  vehicleType: VehicleType!
+  vehicleNumber: String
+  licenseNumber: String
+  aadharNumber: String
+  ifscCode: String
+  emergencyContact: String
+  relation: String
+  currentLocation: Json
+  vehicleImages: Json
+  verificationDocuments: Json
+  assignedAreas: [String!]!
+  bonus: Float
+  isOnline: Boolean!
+  isAvailable: Boolean!
+  totalDeliveries: Int!
+  totalEarnings: Decimal!
+  rating: Decimal!
+  status: DeliveryBoyStatus!
+  joiningDate: DateTime
+  lastActiveAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  user: User!
+  deliveryAssignments: [DeliveryAssignment!]!
+  deliveryBoyEarnings: [DeliveryBoyEarning!]!
+  deliveryBoyPayouts: [DeliveryBoyPayout!]!
+  deliveryBoyCashCollections: [DeliveryBoyCashCollection!]!
+}
+
+enum VehicleType {
+  BIKE
+  SCOOTER
+  BICYCLE
+}
+
+enum DeliveryBoyStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+type DeliveryArea {
+  id: ID!
+  pincode: String!
+  area: String!
+  polygon: String
+  assignedToId: ID
+  createdById: ID!
+  status: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User!
+}
+
+type DeliveryAssignment {
+  id: ID!
+  orderId: ID!
+  deliveryBoyId: ID!
+  assignedAt: DateTime
+  pickedUpAt: DateTime
+  deliveredAt: DateTime
+  status: String!
+  deliveryNotes: String
+  estimatedDeliveryTime: DateTime
+  actualDeliveryTime: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  order: Order!
+  deliveryBoy: DeliveryBoy!
+  createdDeliveryAssignments: [User!]!
+}
+
+type DeliveryBoyEarning {
+  id: ID!
+  deliveryBoyId: ID!
+  orderId: ID!
+  deliveryCharges: Decimal!
+  commissionAmount: Decimal!
+  totalEarnings: Decimal!
+  paymentStatus: String
+  paidAt: DateTime
+  paidById: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  deliveryBoy: DeliveryBoy!
+  order: Order!
+  paidBy: User
+  createdDeliveryBoyEarnings: [User!]!
+}
+
+type DeliveryBoyPayout {
+  id: ID!
+  deliveryBoyId: ID!
+  payoutPeriodStart: DateTime!
+  payoutPeriodEnd: DateTime!
+  totalDeliveries: Int!
+  totalEarnings: Decimal!
+  netPayoutAmount: Decimal!
+  status: String
+  paymentMethod: String
+  message: String
+  type: String
+  transactionId: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  deliveryBoy: DeliveryBoy!
+  createdDeliveryBoyPayouts: [User!]!
+  orders: [Order!]!
+}
+
+type DeliveryBoyCashCollection {
+  id: ID!
+  deliveryBoyId: ID!
+  vendorId: ID
+  orderId: ID
+  amountToCollect: Decimal
+  collectedAmount: Decimal
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  deliveryBoy: DeliveryBoy!
+  vendor: VendorDetail
+  order: Order
+  createdDeliveryBoyCashCollections: [User!]!
+}
+
+type Log {
+  id: ID!
+  requestData: String
+  responseData: Json
+  responseError: String
+  paymentType: String
+  paymentResponse: String
+  paymentResponseError: String
+  createdById: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+}
+
+type Unit {
+  id: ID!
+  measurementName: String!
+  unitName: String!
+  unitValue: Decimal!
+  createdById: ID
+  status: String!
+  defaultUnit: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+}
+
+type Measurement {
+  id: ID!
+  name: String!
+  description: String
+  defaultUnit: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type NotificationTemplate {
+  id: ID!
+  name: String!
+  titleTemplate: String
+  bodyTemplate: String
+  type: NotificationType!
+  isActive: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  PUSH
+}
+
+type SMSTemplate {
+  id: ID!
+  name: String!
+  template: String!
+  variables: Json
+  isActive: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type SMSConfig {
+  id: ID!
+  provider: String!
+  apiKey: String
+  apiSecret: String
+  senderId: String
+  isActive: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Config {
+  id: ID!
+  keyName: String!
+  value: String
+  description: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Scheme {
+  id: ID!
+  name: String
+  thrusholdValue: String
+  note: String
+  isPublished: Boolean
+  isPublishedForCustomer: Boolean
+  publishedById: ID
+  publishedByRoleId: String
+  createdById: ID
+  lastUpdatedById: ID
+  lastUpdatedByRoleId: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User
+  publishedBy: User
+  lastUpdatedBy: User
+}
+
+type OTP {
+  id: ID!
+  customerId: ID
+  otp: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Offer {
+  id: ID!
+  name: String!
+  description: String
+  discountType: String!
+  discountValue: Decimal!
+  minOrderValue: Decimal
+  maxDiscount: Decimal
+  startDate: DateTime!
+  endDate: DateTime!
+  isActive: Boolean!
+  isPublished: Boolean!
+  publishedById: ID
+  createdById: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  createdBy: User!
+  publishedBy: User
+}
+
+input CreateDeliveryBoyInput {
+  userId: ID!
+  vehicleNumber: String!
+  vehicleType: String!
+  licenseNumber: String!
+  status: DeliveryBoyStatus!
+}
+
+input UpdateDeliveryBoyInput {
+  vehicleNumber: String
+  vehicleType: String
+  licenseNumber: String
+  status: DeliveryBoyStatus
+}
+
+input CreateDeliveryAreaInput {
+  name: String!
+  description: String
+  isActive: Boolean!
+}
+
+input UpdateDeliveryAreaInput {
+  name: String
+  description: String
+  isActive: Boolean
+}
+
+input AssignDeliveryBoyInput {
+  orderId: ID!
+  deliveryBoyId: ID!
+  estimatedDeliveryTime: DateTime
+  deliveryNotes: String
+}

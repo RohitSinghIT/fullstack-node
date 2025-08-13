@@ -1,0 +1,1233 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// @seed="ts-node prisma/seed.ts"
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum DeliveryBoyStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  WALLET
+  COD
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum AddressType {
+  CUSTOMER
+  ADMIN
+  VENDOR
+  DELIVERY_PARTNER
+}
+
+enum AddressTitle {
+  HOME
+  OFFICE
+  OTHER
+}
+
+enum ProductType {
+  PACKED
+  LOOSE
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+}
+
+enum CancellationPolicy {
+  ALLOWED
+  NOT_ALLOWED
+}
+
+enum ReturnPolicy {
+  ALLOWED
+  NOT_ALLOWED
+}
+
+enum VehicleType {
+  BIKE
+  SCOOTER
+  BICYCLE
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  PUSH
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+}
+
+// Models
+model User {
+  id                    BigInt      @id @default(autoincrement())
+  tenantId              String      @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  uuid                  String      @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String      @db.VarChar(255)
+  email                 String      @unique @db.VarChar(255)
+  passwordHash          String      @db.VarChar(255)
+  mobile                String?     @db.VarChar(15)
+  status                UserStatus  @default(ACTIVE)
+  profilePicture        String?     @db.VarChar(500)
+  dob                   DateTime?   @db.Date
+  fatherName            String?     @db.VarChar(100)
+  createdById           BigInt?
+  
+  // Security & Privacy Fields
+  twoFactorEnabled      Boolean     @default(false)
+  lastPasswordChange    DateTime?
+  failedLoginAttempts   Int         @default(0)
+  accountLockedUntil   DateTime?
+  dataConsent          Boolean     @default(false)
+  consentDate          DateTime?
+  dataRetentionPolicy  String?     @db.VarChar(100)
+  lastDataAccess       DateTime?
+  
+  // Audit Fields
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  // Relationships
+  createdBy             User?       @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers          User[]      @relation("UserCreatedBy")
+  userRoles             UserRole[]
+  userPermissions       UserPermission[]
+  vendorDetails         VendorDetail?
+  deliveryBoy           DeliveryBoy?
+  addresses             Address[]
+  auditLogs             AuditLog[]
+  createdCategories     ProductCategory[]
+  createdProducts       Product[]
+  createdNotifications  Notification[]
+  createdImageSliders   ImageSlider[]
+  createdFeatures       Feature[]
+  createdWithdrawalRequests WithdrawalRequest[]
+  createdSocialIcons    SocialIcon[]
+  createdFAQs           FAQ[]
+  createdPromoCodes     PromoCode[]
+  createdInvoices       Invoice[]
+  createdDeliveryAreas  DeliveryArea[]
+  createdDeliveryBoyEarnings DeliveryBoyEarning[] @relation("UserCreatedDeliveryBoyEarnings")
+  createdDeliveryBoyPayouts DeliveryBoyPayout[]
+  createdDeliveryBoyCashCollections DeliveryBoyCashCollection[]
+  createdVendorTransactions VendorTransaction[] @relation("UserCreatedVendorTransactions")
+  createdReturns        Return[]
+  createdFeedbacks      Feedback[]
+  createdReviewRatings  ReviewRating[]
+  createdLogs           Log[]
+  createdWomenEmpowerment WomenEmpowerment[]
+  createdDevices        Device[]
+  approvedVendorTransactions VendorTransaction[] @relation("UserApprovedVendorTransactions")
+  paidDeliveryBoyEarnings DeliveryBoyEarning[] @relation("UserPaidDeliveryBoyEarnings")
+  createdProductVariants ProductVariant[]
+  createdUnits          Unit[]
+  createdOffers         Offer[] @relation("OfferCreatedBy")
+  publishedOffers       Offer[] @relation("OfferPublishedBy")
+  createdSchemes        Scheme[] @relation("SchemeCreatedBy")
+  publishedSchemes      Scheme[] @relation("SchemePublishedBy")
+  lastUpdatedSchemes    Scheme[] @relation("SchemeLastUpdatedBy")
+  createdDeliveryAssignments DeliveryAssignment[]
+
+  @@map("users")
+}
+
+model Role {
+  id        BigInt   @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  freeze    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  roleId    BigInt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model OTP {
+  id         BigInt   @id @default(autoincrement())
+  customerId BigInt?
+  otp        String   @db.Char(6)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("otp")
+}
+
+model Permission {
+  id          BigInt   @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(500)
+  module      String   @db.VarChar(50)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           BigInt   @id @default(autoincrement())
+  roleId       BigInt
+  permissionId BigInt
+  actions      Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt
+  permissionId BigInt
+  actions      Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@map("user_permissions")
+}
+
+model Customer {
+  id              BigInt         @id @default(autoincrement())
+  uuid            String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName       String         @db.VarChar(100)
+  lastName        String         @db.VarChar(100)
+  email           String?        @unique @db.VarChar(255)
+  mobile          String         @unique @db.VarChar(15)
+  alternateMobile String?        @db.VarChar(15)
+  balance         Decimal        @default(0.00) @db.Decimal(12, 2)
+  referralCode    String?        @unique @db.Char(8)
+  referredBy      BigInt?
+  totalRefer      Int            @default(0)
+  profilePicture  String?        @db.VarChar(500)
+  dob             DateTime?      @db.Date
+  status          CustomerStatus @default(ACTIVE)
+  verified        Boolean        @default(false)
+  lastOrderDate   DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relationships
+  referredByCustomer Customer? @relation("CustomerReferral", fields: [referredBy], references: [id], onDelete: SetNull)
+  referredCustomers Customer[] @relation("CustomerReferral")
+  addresses        Address[]
+  wallets          Wallet[]
+  wishlists        Wishlist[]
+  orders           Order[]
+  returns          Return[]
+  feedbacks        Feedback[]
+  reviewRatings    ReviewRating[]
+  devices          Device[]
+  womenEmpowerment WomenEmpowerment[]
+  invoices         Invoice[]
+
+  @@map("customers")
+}
+
+model Address {
+  id            BigInt      @id @default(autoincrement())
+  uuid          String      @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referenceId   BigInt
+  type          AddressType
+  customerId    BigInt?
+  address       String      @db.Text
+  title         AddressTitle @default(HOME)
+  latLong       Json?
+  landmark      String?     @db.VarChar(150)
+  pincode       String      @db.VarChar(6)
+  city          String      @db.VarChar(100)
+  state         String      @db.VarChar(100)
+  isDefault     Boolean     @default(false)
+  totalDelivery Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relationships
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+model Wallet {
+  id              BigInt         @id @default(autoincrement())
+  customerId      BigInt
+  transactionType TransactionType
+  amount          Decimal        @db.Decimal(10, 2)
+  totalAmount     Decimal        @db.Decimal(10, 2)
+  redeemType      String?        @db.VarChar(20)
+  title           String         @db.VarChar(255)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relationships
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+model Wishlist {
+  id               BigInt   @id @default(autoincrement())
+  uuid             String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId       BigInt
+  vendorId         BigInt?
+  vendorProductId  BigInt
+  quantity         Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relationships
+  customer       Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vendor        VendorDetail?  @relation(fields: [vendorId], references: [id])
+  vendorProduct VendorProduct  @relation(fields: [vendorProductId], references: [id])
+  variants      ProductVariant[]
+
+  @@unique([customerId, vendorProductId])
+  @@map("wishlists")
+}
+
+model VendorDetail {
+  id                    BigInt      @id @default(autoincrement())
+  userId                BigInt
+  storeName             String      @db.VarChar(100)
+  storeAddress          String      @db.Text
+  storeImage            String      @db.VarChar(500)
+  storeUrl              String      @unique @db.VarChar(500)
+  gstNumber             String?     @db.VarChar(15)
+  fssai                 String?     @db.VarChar(14)
+  cia                    String?     @db.VarChar(20)
+  panNumber             String?     @db.Char(10)
+  bankAccountNumber     String?     @db.VarChar(34)
+  bankIfsc              String?     @db.Char(11)
+  bankBranch            String?     @db.VarChar(100)
+  bankName              String?     @db.VarChar(100)
+  commissionType        String?     @db.VarChar(100)
+  commissionRate        Decimal?    @default(0.00) @db.Decimal(5, 2)
+  status                VendorStatus @default(ACTIVE)
+  prApproval            Boolean?
+  verificationDocuments Json?
+  totalProducts         Int         @default(0)
+  totalOrders           Int         @default(0)
+  totalEarnings         Decimal     @default(0.00) @db.Decimal(12, 2)
+  rating                Decimal     @default(0.00) @db.Decimal(3, 2)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  // Relationships
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wishlists    Wishlist[]
+  vendorProducts VendorProduct[]
+  orders       Order[]
+  vendorTransactions VendorTransaction[]
+  deliveryBoyCashCollections DeliveryBoyCashCollection[]
+  invoices     Invoice[]
+
+  @@unique([userId])
+  @@map("vendor_details")
+}
+
+model Product {
+  id                    BigInt            @id @default(autoincrement())
+  tenantId              String            @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cacheVersion          Int               @default(1)
+  lastCacheUpdate       DateTime?
+  uuid                  String            @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String            @db.VarChar(255)
+  productHindiName      String?           @db.VarChar(255)
+  type                  ProductType
+  upc                   String?           @db.VarChar(12)
+  tax                   Decimal           @default(0) @db.Decimal(5, 2)
+  cess                  Decimal           @default(0) @db.Decimal(5, 2)
+  cgst                  Decimal           @default(0) @db.Decimal(5, 2)
+  sgst                  Decimal           @default(0) @db.Decimal(5, 2)
+  availability          String            @default("available") @db.VarChar(100)
+  rating                Decimal           @default(0) @db.Decimal(3, 2)
+  sku                   String           @unique @db.VarChar(100)
+  hsnCode               String?           @db.VarChar(10)
+  brand                 String?           @db.VarChar(100)
+  coverImage            String?           @db.VarChar(500)
+  createdById           BigInt?
+  status                ProductStatus     @default(ACTIVE)
+  featured              Boolean           @default(false)
+  offerId               Int?
+  searchTags            String?           @db.VarChar(500)
+  seoUrl                String?           @db.VarChar(255)
+  orderIndex            Int               @default(0)
+  relatedProducts       String?           @db.VarChar(255)
+  cancellation          CancellationPolicy @default(ALLOWED)
+  return                ReturnPolicy      @default(ALLOWED)
+  returnDays            Int?
+  isCodAllowed          Boolean           @default(true)
+  isDeleted             Boolean           @default(false)
+  metaTitle             String?           @db.VarChar(255)
+  metaDescription       String?           @db.Text
+  metaKeywords          String[]
+  socialMediaTags       Json?
+  productVideoUrl       String?           @db.VarChar(500)
+  view360Images         Json?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  // Relationships
+  createdBy             User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  categoryLinks         ProductCategoryLink[]
+  variants              ProductVariant[]
+  vendorProducts        VendorProduct[]
+  orderDetails          OrderDetail[]
+  returns               Return[]
+  reviewRatings         ReviewRating[]
+  features              Feature[]
+
+  @@map("products")
+}
+
+model ProductCategory {
+  id            BigInt   @id @default(autoincrement())
+  name          String   @db.VarChar(255)
+  subName       String?  @db.VarChar(255)
+  hindiName     String?  @db.VarChar(255)
+  image         String?  @db.VarChar(500)
+  featured      Boolean  @default(false)
+  status        String   @default("true")
+  orderIndex    Int      @default(0)
+  isDeleted     Boolean  @default(false)
+  createdById   BigInt?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  createdBy     User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  categoryLinks ProductCategoryLink[]
+  variants      ProductVariant[]
+
+  @@map("product_categories")
+}
+
+model ProductCategoryLink {
+  id         BigInt   @id @default(autoincrement())
+  productId  BigInt
+  categoryId BigInt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, categoryId])
+  @@map("product_category_links")
+}
+
+model ProductVariant {
+  id               BigInt   @id @default(autoincrement())
+  vendorProductId  BigInt
+  productId        BigInt?
+  categoryId       BigInt
+  varient          String?  @db.VarChar(255)
+  sku              String   @unique @db.VarChar(100)
+  unitValue        Decimal  @db.Decimal(10, 2)
+  rate             Decimal  @db.Decimal(10, 2)
+  marketRate       Decimal? @db.Decimal(10, 2)
+  seoUrl           String?  @db.VarChar(255)
+  status           String   @default("true")
+  createdById      BigInt?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relationships
+  vendorProduct VendorProduct @relation(fields: [vendorProductId], references: [id], onDelete: Cascade)
+  category      ProductCategory @relation(fields: [categoryId], references: [id])
+  createdBy     User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  orderDetails  OrderDetail[]
+  wishlists     Wishlist[]
+  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("product_variants")
+}
+
+model Unit {
+  id              BigInt   @id @default(autoincrement())
+  measurementName String   @db.VarChar(100)
+  unitName        String   @db.VarChar(50)
+  unitValue       Decimal  @db.Decimal(10, 2)
+  createdById     BigInt?
+  status          String   @default("true")
+  defaultUnit     String?  @db.VarChar(50)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relationships
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("units")
+}
+
+model Measurement {
+  id            BigInt   @id @default(autoincrement())
+  name          String   @db.VarChar(100)
+  description   String?  @db.Text
+  defaultUnit   String?  @db.VarChar(50)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("measurements")
+}
+
+model VendorProduct {
+  id               BigInt   @id @default(autoincrement())
+  uuid             String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId         BigInt
+  productId        BigInt
+  variantId        BigInt?
+  stockQuantity    Int?
+  stockSold        Int?
+  marketPrice      Decimal  @db.Decimal(10, 2)
+  vendorPrice      Decimal  @db.Decimal(10, 2)
+  commissionAmount Decimal  @default(0) @db.Decimal(10, 2)
+  isActive         Boolean  @default(true)
+  isFeatured       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relationships
+  vendor        VendorDetail   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variants      ProductVariant[]
+  wishlists     Wishlist[]
+  orderDetails  OrderDetail[]
+
+  @@unique([vendorId, productId, variantId])
+  @@map("vendor_products")
+}
+
+model Order {
+  id                      BigInt        @id @default(autoincrement())
+  tenantId                String        @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partitionKey            String?       @db.VarChar(50)
+  uuid                    String        @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId                 BigInt
+  orderDate               DateTime      @db.Date
+  vendorId                BigInt
+  customerId              BigInt
+  deliveryBoyId           BigInt
+  addressId               Int?
+  shippingCharges         Decimal       @default(0.00) @db.Decimal(10, 2)
+  tax                     Decimal       @default(0.00) @db.Decimal(10, 2)
+  promoCodeId             Int?
+  discount                Decimal       @default(0) @db.Decimal(10, 2)
+  amount                  Decimal       @db.Decimal(10, 2)
+  updatedAmount           Decimal       @default(0) @db.Decimal(10, 2)
+  deductFromWallet        Decimal       @default(0) @db.Decimal(10, 2)
+  paymentId               String?       @db.VarChar(100)
+  paymentStatus           String        @db.VarChar(50)
+  paymentMethod           String        @db.VarChar(50)
+  cancellationReason      String?       @db.Text
+  partialCancelReason     String?       @db.Text
+  rating                  Decimal?      @db.Decimal(3, 2)
+  review                  String?       @db.Text
+  tip                     Decimal       @default(0) @db.Decimal(10, 2)
+  deliveredAt             DateTime?
+  shippedAt               DateTime?
+  freebieOfferId          Int?
+  womenEmpowerment        String?       @db.VarChar(255)
+  customerReward          String?       @db.VarChar(255)
+  incentiveSettlement     Boolean       @default(false)
+  revertToWallet          Decimal       @default(0) @db.Decimal(10, 2)
+  estimatedDeliveryTime   DateTime?
+  actualDeliveryTime      DateTime?
+  deliverySlotStart       DateTime?     @db.Time
+  deliverySlotEnd         DateTime?     @db.Time
+  customerNotes           String?       @db.Text
+  vendorNotes             String?       @db.Text
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  // Relationships
+  customer                Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vendor                  VendorDetail  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  orderDetails            OrderDetail[]
+  returns                 Return[]
+  deliveryAssignments     DeliveryAssignment[]
+  deliveryBoyEarnings     DeliveryBoyEarning[]
+  deliveryBoyPayouts      DeliveryBoyPayout[]
+  deliveryBoyCashCollections DeliveryBoyCashCollection[]
+  invoices                Invoice[]
+  reviewRatings           ReviewRating[]
+
+  @@map("orders")
+}
+
+model OrderDetail {
+  id               BigInt   @id @default(autoincrement())
+  orderId          BigInt
+  vendorProductId  BigInt
+  productId        BigInt?
+  variantId        BigInt?
+  variantName      String?  @db.VarChar(255)
+  productName      String   @db.VarChar(255)
+  productHindiName String?  @db.VarChar(255)
+  sku              String?  @db.VarChar(100)
+  rate             Decimal  @db.Decimal(10, 2)
+  marketRate       Decimal? @db.Decimal(10, 2)
+  oldRate          Decimal? @db.Decimal(10, 2)
+  qty              Int
+  qtyUnit          String?  @db.VarChar(50)
+  unitValue        Decimal? @db.Decimal(10, 2)
+  updatedQty       Decimal? @db.Decimal(10, 2)
+  updatedUnitValue Decimal? @db.Decimal(10, 2)
+  updatedQtyUnit   String?  @db.VarChar(50)
+  updatedRate      Decimal? @db.Decimal(10, 2)
+  canceledByBf     Boolean  @default(false)
+  returnByCustomer Boolean  @default(false)
+  status           String?  @db.VarChar(50)
+  reason           String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relationships
+  order         Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendorProduct VendorProduct  @relation(fields: [vendorProductId], references: [id], onDelete: Cascade)
+  variant       ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  product       Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("order_details")
+}
+
+model Return {
+  id                BigInt   @id @default(autoincrement())
+  customerId        BigInt
+  orderId           BigInt
+  productId         BigInt?
+  orderDetailId     BigInt
+  productName       String?  @db.VarChar(255)
+  productHindiName  String?  @db.VarChar(255)
+  qtyReturned       Int
+  reason            String   @db.Text
+  returnCharges     Decimal  @default(0) @db.Decimal(10, 2)
+  collectedById     BigInt?
+  approveStatus     String?  @db.VarChar(50)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relationships
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  collectedBy   User?    @relation(fields: [collectedById], references: [id], onDelete: SetNull)
+  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("returns")
+}
+
+model Feedback {
+  id         BigInt   @id @default(autoincrement())
+  customerId BigInt?
+  feedback   String?  @db.Text
+  isDeleted  Boolean?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdFeedbacks User[]
+
+  @@map("feedbacks")
+}
+
+model ImageSlider {
+  id            BigInt   @id @default(autoincrement())
+  title         String?  @db.Text
+  bannerImage   String?  @db.VarChar(255)
+  bannerType    String?  @db.VarChar(255)
+  startTime     DateTime?
+  endTime       DateTime?
+  minAmount     Float?
+  freebie       Json?
+  createdById   BigInt?
+  createdByName String?  @db.VarChar(255)
+  autoPublished Boolean?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("image_slider")
+}
+
+model Offer {
+  id                BigInt   @id @default(autoincrement())
+  type              String?  @db.VarChar(50)
+  bannerImages       String?  @db.Text
+  videoUrl           String?  @db.VarChar(255)
+  position           String?  @db.VarChar(255)
+  freebie            String?  @db.Text
+  description        String?  @db.Text
+  createdById        BigInt?
+  createdByName      String?  @db.VarChar(255)
+  autoPublished      Boolean  @default(false)
+  publishedById      BigInt?
+  publishedByName    String?  @db.VarChar(255)
+  status             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relationships
+  createdBy     User? @relation("OfferCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  publishedBy   User? @relation("OfferPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  @@map("offers")
+}
+
+model Feature {
+  id            BigInt   @id @default(autoincrement())
+  title         String?  @db.VarChar(255)
+  description   String?  @db.Text
+  productType   String?  @db.VarChar(255)
+  productId     Int?
+  categoriesIds String[]
+  createdById   BigInt?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  products Product[]
+
+  @@map("features")
+}
+
+model Notification {
+  id           BigInt   @id @default(autoincrement())
+  type         String?  @db.VarChar(100)
+  title        String   @db.Text
+  body         String   @db.Text
+  image        String?  @db.VarChar(500)
+  createdById  BigInt?
+  role         String?  @db.VarChar(255)
+  isSend       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+
+  // Relationships
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("notifications")
+}
+
+model NotificationTemplate {
+  id        BigInt           @id @default(autoincrement())
+  name      String           @db.VarChar(255)
+  titleTemplate String?      @db.Text
+  bodyTemplate String?       @db.Text
+  type      NotificationType
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @default(now())
+
+  @@map("notification_templates")
+}
+
+model SMSTemplate {
+  id        BigInt   @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  template  String   @db.Text
+  variables Json?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("sms_templates")
+}
+
+model WithdrawalRequest {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt?
+  role      String?  @db.VarChar(100)
+  name      String?  @db.VarChar(100)
+  amount    Float?
+  balance   Float?
+  message   String?  @db.Text
+  status    String?  @db.VarChar(50)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  // Relationships
+  createdBy User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("withdrawal_request")
+}
+
+model SMSConfig {
+  id        BigInt   @id @default(autoincrement())
+  provider  String   @db.VarChar(100)
+  apiKey    String?  @db.VarChar(255)
+  apiSecret String?  @db.VarChar(255)
+  senderId  String?  @db.VarChar(50)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("sms_configs")
+}
+
+model Config {
+  id          BigInt   @id @default(autoincrement())
+  keyName     String   @unique @db.VarChar(255)
+  value       String?  @db.Text
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  @@map("configs")
+}
+
+model Scheme {
+  id                           BigInt   @id @default(autoincrement())
+  name                         String?  @db.VarChar(255)
+  thrusholdValue               String?  @db.VarChar(255)
+  note                         String?  @db.Text
+  isPublished                  Boolean?
+  isPublishedForCustomer       Boolean?
+  publishedById                BigInt?
+  publishedByRoleId            String?  @db.VarChar(255)
+  createdById                  BigInt?
+  lastUpdatedById              BigInt?
+  lastUpdatedByRoleId          String?  @db.VarChar(255)
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @default(now())
+
+  // Relationships
+  createdBy         User? @relation("SchemeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  publishedBy       User? @relation("SchemePublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+  lastUpdatedBy     User? @relation("SchemeLastUpdatedBy", fields: [lastUpdatedById], references: [id], onDelete: SetNull)
+
+  @@map("scheme")
+}
+
+model SocialIcon {
+  id        BigInt   @id @default(autoincrement())
+  image     String?  @db.VarChar(255)
+  url       String?  @db.VarChar(255)
+  createdById BigInt?
+  status    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  // Relationships
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("social_icons")
+}
+
+model WomenEmpowerment {
+  id                      BigInt   @id @default(autoincrement())
+  type                    String?  @db.VarChar(10)
+  amount                  Float?
+  balance                 Float?
+  description             String?  @db.Text
+  contributedByCustomer   Boolean?
+  customerId              BigInt?
+  createdById             BigInt?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @default(now())
+
+  // Relationships
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("women_empowerment")
+}
+
+model FAQ {
+  id        BigInt   @id @default(autoincrement())
+  question  String?  @db.VarChar(255)
+  answer    String?  @db.Text
+  status    String?
+  createdById BigInt?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  // Relationships
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("FAQ")
+}
+
+model Device {
+  id         BigInt   @id @default(autoincrement())
+  type       String?  @db.VarChar(20)
+  customerId BigInt?
+  value      String?  @db.Text
+  createdById BigInt?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+
+  // Relationships
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("devices")
+}
+
+model PromoCode {
+  id                  BigInt   @id @default(autoincrement())
+  code                String?  @db.VarChar(10)
+  message             String?  @db.Text
+  startTime           DateTime?
+  endTime             DateTime?
+  noOfUsers           String?  @db.VarChar(255)
+  pincode             String?  @db.VarChar(6)
+  minOrderAmount      Decimal? @db.Decimal(12, 2)
+  maxDiscountAmount   Decimal? @db.Decimal(12, 2)
+  discount            String?  @db.VarChar(255)
+  discountType        String?  @db.VarChar(255)
+  repeatUsage         Int?
+  noOfRepeatUsage     Int?
+  status              String   @default("false")
+  createdById         BigInt?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @default(now())
+
+  // Relationships
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("promo_code")
+}
+
+model Invoice {
+  id          BigInt   @id @default(autoincrement())
+  invoiceNumber String? @db.VarChar(20)
+  orderId     BigInt?
+  vendorId    BigInt?
+  customerId  BigInt?
+  createdById BigInt?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  // Relationships
+  vendor  VendorDetail? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  orders Order[]
+
+  @@map("invoice")
+}
+
+model AuditLog {
+  id            BigInt      @id @default(autoincrement())
+  uuid          String      @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tableName     String      @db.VarChar(100)
+  recordId      String      @db.Uuid
+  action        AuditAction
+  oldValues     Json?
+  newValues     Json?
+  changedFields String[]
+  userId        BigInt?
+  ipAddress     String?     @db.Inet
+  userAgent     String?     @db.Text
+  createdAt     DateTime    @default(now())
+
+  // Relationships
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model VendorTransaction {
+  id                BigInt   @id @default(autoincrement())
+  vendorId          BigInt
+  payoutPeriodStart DateTime
+  payoutPeriodEnd   DateTime
+  totalOrders       Int      @default(0)
+  totalAmount       Decimal  @default(0) @db.Decimal(10, 2)
+  commissionAmount  Decimal  @default(0) @db.Decimal(10, 2)
+  netAmount         Decimal  @default(0) @db.Decimal(10, 2)
+  status            String   @default("0")
+  type              String?
+  paymentMethod     String?  @db.VarChar(255)
+  message           String?  @db.Text
+  transactionId     String?  @db.VarChar(100)
+  paidAt            DateTime?
+  approvedBy        BigInt?
+  approvalDate      DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
+
+  // Relationships
+  vendor      VendorDetail @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  approvedByUser User? @relation("UserApprovedVendorTransactions", fields: [approvedBy], references: [id], onDelete: SetNull)
+  createdVendorTransactions User[] @relation("UserCreatedVendorTransactions")
+
+  @@map("vendor_transaction")
+}
+
+model DeliveryBoy {
+  id                    BigInt            @id @default(autoincrement())
+  userId                BigInt
+  vehicleType           VehicleType
+  vehicleNumber         String?           @db.VarChar(20)
+  licenseNumber         String?           @db.VarChar(50)
+  aadharNumber          String?           @db.VarChar(20)
+  ifscCode              String?           @db.VarChar(10)
+  emergencyContact      String?           @db.VarChar(20)
+  relation              String?           @db.VarChar(255)
+  currentLocation       Json?
+  vehicleImages         Json?
+  verificationDocuments Json?
+  assignedAreas         String[]
+  bonus                 Float?
+  isOnline              Boolean           @default(false)
+  isAvailable           Boolean           @default(true)
+  totalDeliveries       Int               @default(0)
+  totalEarnings         Decimal           @default(0) @db.Decimal(10, 2)
+  rating                Decimal           @default(0) @db.Decimal(3, 2)
+  status                DeliveryBoyStatus @default(ACTIVE)
+  joiningDate           DateTime?         @db.Date
+  lastActiveAt          DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @default(now())
+
+  // Relationships
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryAssignments   DeliveryAssignment[]
+  deliveryBoyEarnings  DeliveryBoyEarning[]
+  deliveryBoyPayouts    DeliveryBoyPayout[]
+  deliveryBoyCashCollections DeliveryBoyCashCollection[]
+
+  @@unique([userId])
+  @@map("delivery_boys")
+}
+
+model DeliveryArea {
+  id            BigInt   @id @default(autoincrement())
+  pincode       String   @db.VarChar(10)
+  area          String   @db.VarChar(255)
+  polygon       String?  @db.Text
+  assignedToId  BigInt?
+  createdById   BigInt
+  status        String   @default("true")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  // Relationships
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("delivery_areas")
+}
+
+model DeliveryAssignment {
+  id                      BigInt   @id @default(autoincrement())
+  orderId                 BigInt
+  deliveryBoyId           BigInt
+  assignedAt              DateTime?
+  pickedUpAt              DateTime?
+  deliveredAt             DateTime?
+  status                  String   @default("false")
+  deliveryNotes           String?  @db.Text
+  estimatedDeliveryTime   DateTime?
+  actualDeliveryTime      DateTime?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @default(now())
+
+  // Relationships
+  order       Order       @relation(fields: [orderId], references: [id])
+  deliveryBoy DeliveryBoy @relation(fields: [deliveryBoyId], references: [id])
+  createdDeliveryAssignments User[]
+
+  @@map("delivery_assignments")
+}
+
+model DeliveryBoyEarning {
+  id                BigInt   @id @default(autoincrement())
+  deliveryBoyId     BigInt
+  orderId           BigInt
+  deliveryCharges   Decimal  @default(0) @db.Decimal(10, 2)
+  commissionAmount  Decimal  @default(0) @db.Decimal(10, 2)
+  totalEarnings     Decimal  @default(0) @db.Decimal(10, 2)
+  paymentStatus     String?  @db.VarChar(50)
+  paidAt            DateTime?
+  paidById          BigInt?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
+
+  // Relationships
+  deliveryBoy DeliveryBoy @relation(fields: [deliveryBoyId], references: [id], onDelete: Cascade)
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  paidBy      User?       @relation("UserPaidDeliveryBoyEarnings", fields: [paidById], references: [id], onDelete: SetNull)
+  createdDeliveryBoyEarnings User[] @relation("UserCreatedDeliveryBoyEarnings")
+
+  @@map("delivery_boy_earnings")
+}
+
+model DeliveryBoyPayout {
+  id                BigInt   @id @default(autoincrement())
+  deliveryBoyId     BigInt
+  payoutPeriodStart DateTime @db.Date
+  payoutPeriodEnd   DateTime @db.Date
+  totalDeliveries   Int      @default(0)
+  totalEarnings     Decimal  @default(0) @db.Decimal(10, 2)
+  netPayoutAmount   Decimal  @default(0) @db.Decimal(10, 2)
+  status            String?
+  paymentMethod     String?  @db.VarChar(255)
+  message           String?  @db.Text
+  type              String?
+  transactionId     String?  @db.VarChar(100)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
+
+  // Relationships
+  deliveryBoy DeliveryBoy @relation(fields: [deliveryBoyId], references: [id], onDelete: Cascade)
+  createdDeliveryBoyPayouts User[]
+  orders Order[]
+
+  @@map("delivery_boy_payouts")
+}
+
+model DeliveryBoyCashCollection {
+  id                BigInt   @id @default(autoincrement())
+  deliveryBoyId     BigInt
+  vendorId          BigInt?
+  orderId           BigInt?
+  amountToCollect   Decimal? @db.Decimal(5, 2)
+  collectedAmount   Decimal? @db.Decimal(5, 2)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
+
+  // Relationships
+  deliveryBoy DeliveryBoy @relation(fields: [deliveryBoyId], references: [id], onDelete: Cascade)
+  vendor      VendorDetail? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  order       Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdDeliveryBoyCashCollections User[]
+
+  @@map("delivery_boy_cash_collection")
+}
+
+model ReviewRating {
+  id         BigInt   @id @default(autoincrement())
+  customerId BigInt
+  productId  BigInt
+  orderId    BigInt?
+  rating     Decimal  @db.Decimal(3, 2)
+  review     String?  @db.Text
+  status     String?  @db.VarChar(50)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+
+  // Relationships
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order    Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdReviewRatings User[]
+
+  @@unique([customerId, productId])
+  @@map("review_ratings")
+}
+
+model Log {
+  id                    BigInt   @id @default(autoincrement())
+  requestData           String?  @db.VarChar(255)
+  responseData          Json?
+  responseError         String?  @db.VarChar(255)
+  paymentType           String?  @db.VarChar(255)
+  paymentResponse       String?  @db.VarChar(255)
+  paymentResponseError  String?  @db.VarChar(255)
+  createdById           BigInt?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @default(now())
+
+  // Relationships
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("logs")
+} 

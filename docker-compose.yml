@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: bringfresh_postgres
+    environment:
+      POSTGRES_DB: bringfresh_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bringfresh_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: bringfresh_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - bringfresh_network
+    command: redis-server --appendonly yes
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bringfresh_backend
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/bringfresh_db?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 
+      REDIS_DB: 0
+      PORT: 4000
+      NODE_ENV: development
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - bringfresh_network
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: yarn dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  bringfresh_network:
+    driver: bridge 

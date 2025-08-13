@@ -1,0 +1,13 @@
+overwrite: true
+schema: "src/graphql/schema/*.graphql"
+generates:
+  src/generated/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-resolvers"
+    config:
+      mappers:
+        User: "@prisma/client#User"
+      contextType: "../types/context#Context"
+      useIndexSignature: true
+      enumsAsTypes: true 
