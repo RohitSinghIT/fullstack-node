@@ -1,6 +1,6 @@
-# BringFresh Backend
+# Backend
 
-A modern GraphQL API built with TypeScript, Apollo Server, Prisma ORM, and PostgreSQL for the BringFresh e-commerce platform.
+A modern GraphQL API built with TypeScript, Apollo Server, Prisma ORM, and PostgreSQL for the e-commerce platform.
 
 ## 🚀 Features
 
@@ -23,17 +23,12 @@ A modern GraphQL API built with TypeScript, Apollo Server, Prisma ORM, and Postg
 
 ## 🛠️ Installation
 
-1. **Clone the repository and navigate to backend:**
-   ```bash
-   cd backend
-   ```
-
-2. **Install dependencies:**
+1. **Clone the repository and Install dependencies:**
    ```bash
    npm install
    ```
 
-3. **Set up environment variables:**
+2. **Set up environment variables:**
    ```bash
    cp env.example .env
    ```
@@ -46,7 +41,7 @@ A modern GraphQL API built with TypeScript, Apollo Server, Prisma ORM, and Postg
    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
    ```
 
-4. **Set up the database:**
+3. **Set up the database:**
    ```bash
    # Generate Prisma client
    npm run prisma:generate
@@ -61,7 +56,7 @@ A modern GraphQL API built with TypeScript, Apollo Server, Prisma ORM, and Postg
    npm run prisma:studio
    ```
 
-5. **Generate GraphQL types:**
+4. **Generate GraphQL types:**
    ```bash
    npm run codegen
    ```
